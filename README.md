@@ -22,7 +22,7 @@ from world import PYWORLD
 pw = PYWORLD()
 x, fs = sf.read('audio')
 
-f0, t = pw.harvest(x.astype(np.double),  fs=16000, f0_ceil=1100, f0_floor=50, frame_period=10)
+f0, t = pw.harvest(x.astype(np.double), fs=16000, f0_ceil=1100, f0_floor=50, frame_period=10)
 f0 = pw.stonemask(x.astype(np.double), 16000, t, f0)
 
 ```
