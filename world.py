@@ -1,4 +1,4 @@
-import os, torch, ctypes, platform, shutil, numpy as np, tempfile as tf
+import os, torch, ctypes, platform, numpy as np
 
 class DioOption(ctypes.Structure):
     _fields_ = [("F0Floor", ctypes.c_double), ("F0Ceil", ctypes.c_double), ("ChannelsInOctave", ctypes.c_double), ("FramePeriod", ctypes.c_double), ("Speed", ctypes.c_int), ("AllowedRange", ctypes.c_double)]
@@ -14,19 +14,19 @@ class D4COption(ctypes.Structure):
 
 class PYWORLD:
     def __init__(self):
-        model = torch.load("world.pth", map_location="cpu")
+        self.world_path = "world"
+        os.makedirs(self.world_path, exist_ok=True)
+
         model_type, suffix = (("world_64" if platform.architecture()[0] == "64bit" else "world_86"), ".dll") if platform.system() == "Windows" else ("world_linux", ".so")
+        self.world_file_path = os.path.join(self.world_path, f"{model_type}{suffix}")
 
-        temp_folder = "temp"
+        if not os.path.exists(self.world_file_path):
+            model = torch.load("world.pth", map_location="cpu")
 
-        if os.path.exists(temp_folder): shutil.rmtree(temp_folder, ignore_errors=True)
-        os.makedirs(temp_folder, exist_ok=True)
+            with open(self.world_file_path, "wb") as w:
+                w.write(model[model_type])
 
-        with tf.NamedTemporaryFile(delete=False, suffix=suffix, dir=temp_folder) as tmp:
-            tmp.write(model[model_type])
-            temp_path = tmp.name
-
-        self.world_dll = ctypes.CDLL(temp_path)
+        self.world_dll = ctypes.CDLL(self.world_file_path)
 
     def harvest(self, x, fs, f0_floor=50, f0_ceil=1100, frame_period=10):
         self.world_dll.Harvest.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.c_int, ctypes.c_int, ctypes.POINTER(HarvestOption), ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_double)]
